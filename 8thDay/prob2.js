@@ -4,40 +4,45 @@ const _ = require('lodash');
 const { readFile } = require('fs');
 const { inspect } = require('util');
 
-const ruleParser = /^(?<container>.*?) bags contain (?<contents>.*?)\.$/;
-const contentsParser = /^(?<number>\d+) (?<bagtype>.*) bags?$/;
+const instructionParser = /^(?<opcode>...) (?<argument>[-+0-9]+)$/;
 
 readFile('input.txt', 'utf8', (err, data) => {
-    const rules = _(data.trim()).split('\n')
-    .map(line => line.match(ruleParser).groups)
-    .map(bag => _.assign(bag, { contents: _(bag.contents).split(', ')
-                                                        .map(content => {
-                                                            const matches = content.match(contentsParser);
-                                                            if(!matches) return { number: 0, bagtype: undefined };
-                                                            return {
-                                                                bagtype: matches.groups.bagtype,
-                                                                number: parseInt(matches.groups.number),
-                                                            };
-                                                        })
-                                                        .keyBy('bagtype')
-                                                        .mapValues('number')
-                                                        .value()
-                              }
-                        )
-        )
-    .keyBy('container')
-    .mapValues('contents')
+    const program = _(data.trim())
+    .split('\n')
+    .map(line => line.match(instructionParser).groups)
+    .map(line => ({ opcode: line.opcode, argument: parseInt(line.argument) }))
     .value();
 
-    const recursiveNeed = (bag) => {
-        const expand = rules[bag];
+    program.forEach((line, lineNumber) => {
+        if(line.opcode === 'acc') return; // Don't try and change "acc"s
 
-        if(!expand) return 0;
-        return 1 + _(expand).map((number, bag) => {
-            if(number === 0) return 0;
-            return number * recursiveNeed(bag)
-        }).sum();
-    };
+        const testProgram = _.cloneDeep(program); // Copy the original program
+        testProgram[lineNumber].opcode = testProgram[lineNumber].opcode === 'jmp' ? 'nop' : 'jmp'; // Swap the opcode
 
-    console.log(recursiveNeed('shiny gold') - 1);
+        // Now try running and see if we hang, blow the stack or exit
+        let acc = 0;
+        let pc = 0;
+        let executedLines = _.times(testProgram.length, _.constant(false));
+        while(pc < testProgram.length && !executedLines[pc]) {
+            executedLines[pc] = true;
+
+            if(testProgram[pc].opcode === 'acc') {
+                acc += testProgram[pc].argument;
+            }
+
+            if(testProgram[pc].opcode === 'jmp') {
+                pc += testProgram[pc].argument;
+            } else {
+                pc++;
+            }
+
+            if(pc === testProgram.length) {
+                console.log(acc);
+                process.exit(0);
+            }
+        }
+    });
+
+    console.log(undefined);
+    process.exit(1);
 });
