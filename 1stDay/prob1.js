@@ -5,7 +5,8 @@ const { readFile } = require('fs');
 
 readFile('input.txt', 'utf8', (err, data) =>
 {
-    _(data).split('\n')
+    _(data).trim()
+    .split('\n')
     .map(s => parseInt(s))
     .sort()
     .forEach((val, i, nums) => {
