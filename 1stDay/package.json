@@ -2,5 +2,8 @@
   "name": "1stDay",
   "version": "1.0.0",
   "main": "index.js",
-  "license": "BSD-3-Clause-Clear"
+  "license": "BSD-3-Clause-Clear",
+  "dependencies": {
+    "lodash": "^4.17.20"
+  }
 }
